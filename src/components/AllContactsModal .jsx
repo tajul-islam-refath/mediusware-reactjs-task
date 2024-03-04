@@ -8,10 +8,10 @@ const AllContactsModal = () => {
   const [selectedContact, setSelectedContact] = useState(null);
   const [allCountacts, setAllCountacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage] = useState(1);
+  const [nextPage, setPage] = useState(1);
   const [even, setEven] = useState(false);
 
-  const getAllContacts = async (search = "", per_page = 20) => {
+  const getAllContacts = async (page = 1, search = "", per_page = 30) => {
     try {
       let url = `https://contact.mediusware.com/api/contacts/?page=${page}&page_size=${per_page}`;
       if (search.trim() !== "") {
@@ -26,12 +26,13 @@ const AllContactsModal = () => {
       console.log(err);
     }
   };
+
   useEffect(() => {
     if (even) {
       let evenData = allCountacts.filter((c) => c.id % 2 == 0);
       setAllCountacts(evenData);
     } else {
-      getAllContacts();
+      getAllContacts(1);
     }
   }, [even]);
 
@@ -41,14 +42,14 @@ const AllContactsModal = () => {
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      getAllContacts(searchTerm);
+      getAllContacts(1, searchTerm);
     }, 1000);
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
   const handleEnterKey = (event) => {
     if (event.key === "Enter") {
-      getAllContacts(searchTerm);
+      getAllContacts(1, searchTerm);
     }
   };
 
@@ -59,6 +60,19 @@ const AllContactsModal = () => {
   const handleClose = () => {
     setSelectedContact(null);
   };
+
+  useEffect(() => {
+    window.addEventListener("scroll", () => {
+      if (
+        window.innerHeight + window.scrollY >=
+        document.body.offsetHeight - 500
+      ) {
+        console.log("trigger");
+        getUsContacts(nextPage + 1);
+        setPage(nextPage + 1);
+      }
+    });
+  }, []);
 
   return (
     <>

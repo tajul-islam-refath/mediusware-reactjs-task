@@ -6,7 +6,7 @@ const Problem2 = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const modal = queryParams.get("modal");
-  console.log(modal);
+
   return (
     <>
       <div className="container">
