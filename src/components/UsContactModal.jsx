@@ -6,19 +6,25 @@ import SingleContactModal from "./SingleContactModal";
 
 const UsContactModal = () => {
   const [selectedContact, setSelectedContact] = useState(null);
-
   const [usCountacts, setUsCountacts] = useState([]);
-  const [next, setNext] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
   const [even, setEven] = useState(false);
 
-  const getUsContacts = async () => {
-    let {
-      data: { next, results },
-    } = await axios.get(
-      `https://contact.mediusware.com/api/country-contacts/United States/`
-    );
-    setNext(next);
-    setUsCountacts(results);
+  const getUsContacts = async (search = "", per_page = 20) => {
+    try {
+      let url = `https://contact.mediusware.com/api/country-contacts/United States/?page=${page}&page_size=${per_page}`;
+      if (search.trim() !== "") {
+        url += `&search=${search}`;
+      }
+
+      let {
+        data: { next, results },
+      } = await axios.get(url);
+      setUsCountacts(results);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const onChangeEven = () => {
@@ -33,6 +39,23 @@ const UsContactModal = () => {
       getUsContacts();
     }
   }, [even]);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      getUsContacts(searchTerm);
+    }, 1000);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  const handleEnterKey = (event) => {
+    if (event.key === "Enter") {
+      getUsContacts(searchTerm);
+    }
+  };
+
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+  };
 
   const handleClose = () => {
     setSelectedContact(null);
@@ -67,6 +90,17 @@ const UsContactModal = () => {
               type="button">
               Close
             </Link>
+          </div>
+          <div className="col-auto">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Name"
+              name="name"
+              onChange={handleSearch}
+              value={searchTerm}
+              onKeyDown={handleEnterKey}
+            />
           </div>
           <table className="table table-striped ">
             <thead>

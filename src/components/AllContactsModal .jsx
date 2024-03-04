@@ -6,17 +6,25 @@ import SingleContactModal from "./SingleContactModal";
 
 const AllContactsModal = () => {
   const [selectedContact, setSelectedContact] = useState(null);
-
   const [allCountacts, setAllCountacts] = useState([]);
-  const [next, setNext] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
   const [even, setEven] = useState(false);
 
-  const getAllContacts = async () => {
-    let {
-      data: { next, results },
-    } = await axios.get(`https://contact.mediusware.com/api/contacts/`);
-    setNext(next);
-    setAllCountacts([...results]);
+  const getAllContacts = async (search = "", per_page = 20) => {
+    try {
+      let url = `https://contact.mediusware.com/api/contacts/?page=${page}&page_size=${per_page}`;
+      if (search.trim() !== "") {
+        url += `&search=${search}`;
+      }
+
+      let {
+        data: { next, results },
+      } = await axios.get(url);
+      setAllCountacts(results);
+    } catch (err) {
+      console.log(err);
+    }
   };
   useEffect(() => {
     if (even) {
@@ -29,6 +37,23 @@ const AllContactsModal = () => {
 
   const onChangeEven = () => {
     setEven(!even);
+  };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      getAllContacts(searchTerm);
+    }, 1000);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  const handleEnterKey = (event) => {
+    if (event.key === "Enter") {
+      getAllContacts(searchTerm);
+    }
+  };
+
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
   };
 
   const handleClose = () => {
@@ -64,6 +89,17 @@ const AllContactsModal = () => {
               type="button">
               Close
             </Link>
+          </div>
+          <div className="col-auto">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="search"
+              name="search"
+              onChange={handleSearch}
+              value={searchTerm}
+              onKeyDown={handleEnterKey}
+            />
           </div>
           <table className="table table-striped ">
             <thead>
