@@ -8,12 +8,12 @@ const AllContactsModal = () => {
   const [selectedContact, setSelectedContact] = useState(null);
   const [allCountacts, setAllCountacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [nextPage, setPage] = useState(1);
+  const [nextPage, setNextPage] = useState(null);
   const [even, setEven] = useState(false);
 
-  const getAllContacts = async (page = 1, search = "", per_page = 30) => {
+  const getAllContacts = async (search = "", per_page = 30) => {
     try {
-      let url = `https://contact.mediusware.com/api/contacts/?page=${page}&page_size=${per_page}`;
+      let url = `https://contact.mediusware.com/api/contacts/?page_size=${per_page}`;
       if (search.trim() !== "") {
         url += `&search=${search}`;
       }
@@ -22,6 +22,19 @@ const AllContactsModal = () => {
         data: { next, results },
       } = await axios.get(url);
       setAllCountacts(results);
+      setNextPage(next);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const getInfiniteData = async (nextPage) => {
+    try {
+      let {
+        data: { next, results },
+      } = await axios.get(nextPage);
+      setAllCountacts((prev) => [...prev, ...results]);
+      setNextPage(next);
     } catch (err) {
       console.log(err);
     }
@@ -30,9 +43,9 @@ const AllContactsModal = () => {
   useEffect(() => {
     if (even) {
       let evenData = allCountacts.filter((c) => c.id % 2 == 0);
-      setAllCountacts(evenData);
+      setAllCountacts(evenData, searchTerm);
     } else {
-      getAllContacts(1);
+      getAllContacts(searchTerm);
     }
   }, [even]);
 
@@ -42,14 +55,17 @@ const AllContactsModal = () => {
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      getAllContacts(1, searchTerm);
+      getAllContacts(searchTerm);
     }, 1000);
-    return () => clearTimeout(delayDebounceFn);
+
+    return () => {
+      clearTimeout(delayDebounceFn);
+    };
   }, [searchTerm]);
 
   const handleEnterKey = (event) => {
     if (event.key === "Enter") {
-      getAllContacts(1, searchTerm);
+      getAllContacts(searchTerm);
     }
   };
 
@@ -62,17 +78,17 @@ const AllContactsModal = () => {
   };
 
   useEffect(() => {
-    window.addEventListener("scroll", () => {
-      if (
-        window.innerHeight + window.scrollY >=
-        document.body.offsetHeight - 500
-      ) {
-        console.log("trigger");
-        getUsContacts(nextPage + 1);
-        setPage(nextPage + 1);
-      }
+    let intersection = document.querySelector("#intersection");
+    let observer = new IntersectionObserver((entries) => {
+      entries.map((entry) => {
+        if (entry.isIntersecting && nextPage) {
+          getInfiniteData(nextPage);
+        }
+      });
     });
-  }, []);
+    observer.observe(intersection);
+    return () => observer.disconnect();
+  }, [nextPage]);
 
   return (
     <>
@@ -131,6 +147,9 @@ const AllContactsModal = () => {
                   <th>{item.country?.name}</th>
                 </tr>
               ))}
+              <tr id="intersection">
+                <td>Loading....</td>
+              </tr>
             </tbody>
           </table>
         </Modal.Body>
